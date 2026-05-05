@@ -192,55 +192,47 @@ const MobileWorkersList = () => {
       onClick: () => navigate(`/workers/${worker.id}`),
     });
 
-    // 🔧 v22.3: الشهادة الصحية - منطق ذكي مبني على healthCertificateExpiryDate من worker
+    // الشهادة الصحية - منطق ذكي
     const approvedCert = approvedCertificates[worker.id];
     const activeCert = activeCertificates[worker.id];
-    const hasValidCert = worker.healthCertificateExpiryDate && new Date(worker.healthCertificateExpiryDate) > new Date();
     
-    if (activeCert) {
-      // ⏳ طلب قيد المعالجة
-      actions.push({
-        icon: FileHeart, label: 'بانتظار الاعتماد', color: 'yellow',
-        onClick: () => toast('الطلب قيد المراجعة', { icon: '⏳' }),
-      });
-    } else if (approvedCert) {
-      // ✅ شهادة معتمدة (آخر طلب) → عرض
+    if (approvedCert) {
+      // ✅ شهادة معتمدة → زر "عرض الشهادة"
       actions.push({
         icon: FileHeart, label: 'عرض الشهادة', color: 'green',
         onClick: () => handleViewApprovedCertificate(approvedCert.id),
       });
-    } else if (hasValidCert && canRequest) {
-      // عنده شهادة سارية لكن لا approvedCert في API → نسمح بطلب جديدة (للتجديد)
+    } else if (activeCert) {
+      // ⏳ طلب قيد المعالجة → معلومة فقط
       actions.push({
-        icon: FileHeart, label: 'طلب تجديد', color: 'green',
-        onClick: () => setCertModalWorker(worker),
+        icon: FileHeart, label: 'بانتظار الاعتماد', color: 'yellow',
+        onClick: () => toast('الطلب قيد المراجعة', { icon: '⏳' }),
       });
     } else if (canRequest) {
-      // ➕ لا توجد شهادة → طلب جديد
+      // ➕ لا توجد شهادة → زر "طلب شهادة"
       actions.push({
         icon: FileHeart, label: 'طلب شهادة', color: 'green',
         onClick: () => setCertModalWorker(worker),
       });
     }
 
-    // التقرير الطبي - منطق مماثل
+    // التقرير الطبي - نفس المنطق
     const approvedReport = approvedReports[worker.id];
     const activeReport = activeReports[worker.id];
-    const hasValidReport = worker.medicalReportExpiryDate && new Date(worker.medicalReportExpiryDate) > new Date();
     
-    if (activeReport) {
-      actions.push({
-        icon: Stethoscope, label: 'تقرير قيد المعالجة', color: 'yellow',
-        onClick: () => toast('الطلب قيد المراجعة', { icon: '⏳' }),
-      });
-    } else if (approvedReport) {
+    if (approvedReport) {
       actions.push({
         icon: Stethoscope, label: 'عرض التقرير', color: 'yellow',
         onClick: () => handleViewApprovedReport(approvedReport.id),
       });
+    } else if (activeReport) {
+      actions.push({
+        icon: Stethoscope, label: 'تقرير قيد المعالجة', color: 'yellow',
+        onClick: () => toast('الطلب قيد المراجعة', { icon: '⏳' }),
+      });
     } else if (canRequest) {
       actions.push({
-        icon: Stethoscope, label: hasValidReport ? 'طلب تجديد' : 'طلب تقرير', color: 'yellow',
+        icon: Stethoscope, label: 'طلب تقرير', color: 'yellow',
         onClick: () => setReportModalWorker(worker),
       });
     }
@@ -262,18 +254,14 @@ const MobileWorkersList = () => {
     return actions;
   };
 
-  // 🔧 v22.3: استخدام healthCertificateExpiryDate من worker مباشرة (مثل WorkersList الديسكتوب)
+  // Status badge
   const getStatusBadge = (worker) => {
-    const activeCert = activeCertificates[worker.id];
-    if (activeCert) {
-      return <MobileBadge color="purple">قيد الإصدار</MobileBadge>;
-    }
+    const cert = approvedCertificates[worker.id];
+    if (!cert) return <MobileBadge color="gray">لا توجد شهادة</MobileBadge>;
     
-    if (!worker.healthCertificateExpiryDate) {
-      return <MobileBadge color="gray">لم تُصدر</MobileBadge>;
-    }
+    const expDate = cert.expiryDate ? new Date(cert.expiryDate) : null;
+    if (!expDate) return <MobileBadge color="gray">—</MobileBadge>;
     
-    const expDate = new Date(worker.healthCertificateExpiryDate);
     const daysLeft = Math.floor((expDate - new Date()) / (1000 * 60 * 60 * 24));
     
     if (daysLeft < 0) return <MobileBadge color="red">منتهية</MobileBadge>;

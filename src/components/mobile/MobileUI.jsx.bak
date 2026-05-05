@@ -111,32 +111,45 @@ export const MobileBadge = ({ children, color = 'gray' }) => {
  * - يستخدم URL مطلق للصورة (يعمل في التطبيق)
  */
 export const MobileWorkerCard = ({ worker, onClick, actions = [], badge }) => {
-  // 🔧 v22.3: استخدام الحقول الصحيحة من DB
-  const name = worker.name || worker.fullName || 'بدون اسم';
+  // 🔧 v22.2: دعم حقول متعددة
+  const name = worker.fullName || worker.name || 'بدون اسم';
+  const imageField = worker.personalImage || worker.image || worker.photo;
   
-  // personalImage في DB يحتوي مسار كامل أو نسبي
-  // مثل: "/uploads/workers/xxx.jpg" أو "https://..."
-  const imageUrl = worker.personalImage || null;
+  // 🔧 v22.2: URL مطلق للصورة (يعمل في التطبيق Capacitor)
+  const getImageUrl = (filename) => {
+    if (!filename) return null;
+    if (filename.startsWith('http')) return filename;
+    // استخدم origin للحصول على HTTPS كامل (https://hi-chat.com/uploads/...)
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    // في التطبيق، origin قد يكون "https://localhost" - نستخدم hi-chat.com مباشرة
+    const isApp = window.Capacitor?.isNativePlatform?.();
+    const baseUrl = isApp ? 'https://hi-chat.com' : origin;
+    return `${baseUrl}/uploads/workers/${filename}`;
+  };
+  
+  const imageUrl = getImageUrl(imageField);
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden active:scale-[0.99] transition">
       <div className="p-4 flex items-start gap-3 cursor-pointer" onClick={onClick}>
         {/* صورة */}
-        <div className="flex-shrink-0 relative">
-          {imageUrl && (
+        <div className="flex-shrink-0">
+          {imageUrl ? (
             <img
               src={imageUrl}
               alt={name}
               className="w-14 h-14 rounded-full object-cover border-2 border-gray-100"
               onError={(e) => {
+                // عند فشل تحميل الصورة، نعرض الحرف الأول
                 e.target.style.display = 'none';
-                const fallback = e.target.nextElementSibling;
-                if (fallback) fallback.style.display = 'flex';
+                if (e.target.nextSibling) {
+                  e.target.nextSibling.style.display = 'flex';
+                }
               }}
             />
-          )}
+          ) : null}
           <div 
-            className="w-14 h-14 rounded-full bg-moh-primary text-white flex items-center justify-center font-bold text-lg"
+            className={`w-14 h-14 rounded-full bg-moh-primary text-white flex items-center justify-center font-bold text-lg ${imageUrl ? 'hidden' : 'flex'}`}
             style={{ display: imageUrl ? 'none' : 'flex' }}
           >
             {name.charAt(0)}
@@ -149,7 +162,7 @@ export const MobileWorkerCard = ({ worker, onClick, actions = [], badge }) => {
             <div className="min-w-0 flex-1">
               <h3 className="font-bold text-gray-900 truncate">{name}</h3>
               <p className="text-sm text-gray-600 truncate">
-                {worker.jobTitle?.name || '—'}
+                {worker.jobTitle?.name || worker.jobTitleName || '—'}
               </p>
               <p className="text-xs text-gray-400 mt-0.5">
                 رقم الهوية: {worker.idNumber || '—'}
@@ -190,8 +203,6 @@ export const MobileWorkerCard = ({ worker, onClick, actions = [], badge }) => {
       )}
     </div>
   );
-};
-
 };
 
 export const MobileFAB = ({ icon: Icon, onClick, label }) => (
