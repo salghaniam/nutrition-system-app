@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">نظام التغذية</string>
+    <string name="title_activity_main">نظام التغذية</string>
+    <string name="package_name">sa.gov.moh.nutrition</string>
+    <string name="custom_url_scheme">sa.gov.moh.nutrition</string>
+</resources>

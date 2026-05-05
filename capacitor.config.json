@@ -1,0 +1,29 @@
+{
+  "appId": "sa.gov.moh.nutrition",
+  "appName": "نظام التغذية",
+  "webDir": "dist",
+  "server": {
+    "url": "https://hi-chat.com",
+    "cleartext": false,
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#1B6E4F",
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#1B6E4F",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": true,
+      "spinnerColor": "#FFFFFF",
+      "splashFullScreen": true,
+      "splashImmersive": true
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#1B6E4F"
+    }
+  }
+}
