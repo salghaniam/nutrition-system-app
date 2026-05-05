@@ -1,0 +1,292 @@
+import { useState, useEffect } from 'react';
+import { Settings as SettingsIcon, Save, Upload, MessageSquare, Globe, Wrench, Award } from 'lucide-react';
+import api from '../services/api';
+import toast from 'react-hot-toast';
+
+const Settings = () => {
+  const [tab, setTab] = useState('site');
+  const [form, setForm] = useState({});
+  const [files, setFiles] = useState({});
+  const [previews, setPreviews] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [current, setCurrent] = useState({});
+
+  useEffect(() => { load(); }, []);
+
+  const load = async () => {
+    try {
+      const res = await api.get('/settings');
+      const data = res.data.data || {};
+      setForm({
+        siteName: data.siteName || 'نظام إدارة العاملين بأقسام التغذية',
+        siteUrl: data.siteUrl || '',
+        serviceStatus: data.serviceStatus || 'active',
+        maintenanceMessage: data.maintenanceMessage || '',
+        technicalAdminTitle: data.technicalAdminTitle || 'مدير إدارة التغذية',
+        responsibleFullName: data.responsibleFullName || '',
+        formsHeader: data.formsHeader || 'تجمع القصيم الصحي\nإدارة الخدمات الطبية المساعدة\nقسم التغذية',
+        whatsappEnabled: data.whatsappEnabled || false,
+        whatsappApiUrl: data.whatsappApiUrl || 'https://wasenderapi.com/api/send-message',
+        whatsappApiKey: data.whatsappApiKey || '',
+        whatsappSenderName: data.whatsappSenderName || 'نظام إدارة العاملين',
+      });
+      setCurrent(data);
+    } catch (e) { console.error(e); }
+  };
+
+  const handleFile = (field, file) => {
+    if (!file) return;
+    setFiles((prev) => ({ ...prev, [field]: file }));
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreviews((prev) => ({ ...prev, [field]: reader.result }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const save = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const fd = new FormData();
+      Object.entries(form).forEach(([k, v]) => {
+        if (v !== '' && v !== null && v !== undefined) {
+          fd.append(k, typeof v === 'boolean' ? (v ? 'true' : 'false') : v);
+        }
+      });
+      Object.entries(files).forEach(([k, v]) => {
+        if (v) fd.append(k, v);
+      });
+      await api.put('/settings', fd);
+      toast.success('تم الحفظ');
+      load();
+      setFiles({});
+      setPreviews({});
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
+  };
+
+  const tabs = [
+    { id: 'site', label: 'الموقع', icon: Globe },
+    { id: 'service', label: 'الخدمة', icon: Wrench },
+    { id: 'certificates', label: 'المعتمدون والشهادات', icon: Award },
+    { id: 'whatsapp', label: 'WhatsApp', icon: MessageSquare },
+  ];
+
+  return (
+    <div className="space-y-4 max-w-4xl">
+      <h1 className="text-2xl font-bold flex items-center gap-2">
+        <SettingsIcon size={28} /> الإعدادات
+      </h1>
+
+      {/* التبويبات */}
+      <div className="bg-white rounded-xl shadow-soft p-2 flex gap-2 overflow-x-auto">
+        {tabs.map((t) => {
+          const Icon = t.icon;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 whitespace-nowrap transition ${
+                tab === t.id ? 'bg-moh-primary text-white' : 'text-gray-600 hover:bg-moh-bg-light'
+              }`}
+            >
+              <Icon size={16} />
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <form onSubmit={save} className="space-y-4">
+
+        {/* تبويب الموقع */}
+        {tab === 'site' && (
+          <div className="card">
+            <h2 className="font-bold text-moh-primary mb-4 pb-2 border-b">معلومات الموقع</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="label">اسم الموقع</label>
+                <input className="input" value={form.siteName || ''} onChange={(e) => setForm({ ...form, siteName: e.target.value })} />
+              </div>
+              <div>
+                <label className="label">رابط الموقع</label>
+                <input className="input" value={form.siteUrl || ''} onChange={(e) => setForm({ ...form, siteUrl: e.target.value })} />
+              </div>
+              <div>
+                <label className="label">شعار الموقع</label>
+                <label className="cursor-pointer flex items-center justify-center gap-2 px-3 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-moh-primary text-sm">
+                  <Upload size={16} />{previews.siteLogo || current.siteLogo ? 'تغيير' : 'رفع شعار'}
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile('siteLogo', e.target.files[0])} />
+                </label>
+                {(previews.siteLogo || current.siteLogo) && (
+                  <img src={previews.siteLogo || current.siteLogo} alt="" className="mt-2 w-20 h-20 object-contain border rounded" />
+                )}
+              </div>
+              <div>
+                <label className="label">أيقونة الموقع (Favicon)</label>
+                <label className="cursor-pointer flex items-center justify-center gap-2 px-3 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-moh-primary text-sm">
+                  <Upload size={16} />{previews.siteFavicon || current.siteFavicon ? 'تغيير' : 'رفع'}
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile('siteFavicon', e.target.files[0])} />
+                </label>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* تبويب الخدمة */}
+        {tab === 'service' && (
+          <div className="card">
+            <h2 className="font-bold text-moh-primary mb-4 pb-2 border-b">حالة الخدمة</h2>
+            <div className="space-y-3">
+              <div>
+                <label className="label">حالة الخدمة</label>
+                <select className="input" value={form.serviceStatus} onChange={(e) => setForm({ ...form, serviceStatus: e.target.value })}>
+                  <option value="active">مفعّل</option>
+                  <option value="maintenance">صيانة</option>
+                </select>
+              </div>
+              {form.serviceStatus === 'maintenance' && (
+                <div>
+                  <label className="label">رسالة الصيانة</label>
+                  <textarea className="input" rows={3} value={form.maintenanceMessage} onChange={(e) => setForm({ ...form, maintenanceMessage: e.target.value })} />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* تبويب المعتمدون */}
+        {tab === 'certificates' && (
+          <div className="card">
+            <h2 className="font-bold text-moh-primary mb-4 pb-2 border-b">المعتمدون والشهادات</h2>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="label">مسمى الإدارة الفنية *</label>
+                  <input className="input" value={form.technicalAdminTitle || ''} onChange={(e) => setForm({ ...form, technicalAdminTitle: e.target.value })} />
+                  <p className="text-xs text-gray-500 mt-1">يظهر في النماذج والشهادات</p>
+                </div>
+                <div>
+                  <label className="label">اسم المسؤول ثلاثي *</label>
+                  <input className="input" value={form.responsibleFullName || ''} onChange={(e) => setForm({ ...form, responsibleFullName: e.target.value })} />
+                </div>
+              </div>
+              <div>
+                <label className="label">ترويسة النماذج</label>
+                <textarea className="input" rows={4} value={form.formsHeader || ''} onChange={(e) => setForm({ ...form, formsHeader: e.target.value })} />
+                <p className="text-xs text-gray-500 mt-1">
+                  📌 في الشهادة الصحية: تظهر بسطر واحد (الفواصل ستحول إلى •)<br />
+                  📌 في التقرير الطبي: تظهر متعدد الأسطر كما هي
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="label">صورة توقيع المدير</label>
+                  <label className="cursor-pointer flex items-center justify-center gap-2 px-3 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-moh-primary text-sm">
+                    <Upload size={16} />{previews.managerSignature || current.managerSignature ? 'تغيير' : 'رفع'}
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFile('managerSignature', e.target.files[0])} />
+                  </label>
+                  {(previews.managerSignature || current.managerSignature) && (
+                    <img src={previews.managerSignature || current.managerSignature} alt="" className="mt-2 max-w-[180px] max-h-[80px] object-contain border rounded bg-white p-2" />
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 🆕 تبويب WhatsApp */}
+        {tab === 'whatsapp' && (
+          <div className="card">
+            <h2 className="font-bold text-moh-primary mb-4 pb-2 border-b flex items-center gap-2">
+              <MessageSquare size={20} />
+              إعدادات WhatsApp (WASender API)
+            </h2>
+
+            <div className="bg-blue-50 border border-blue-200 rounded p-3 mb-4 text-sm text-blue-800">
+              <strong>📌 ملاحظة:</strong> هذه الخدمة تُستخدم لإرسال رمز التحقق للعمال عند تسجيل الدخول.
+              عند التعطيل، يتم تسجيل دخول العامل مباشرة بدون رمز تحقق.
+            </div>
+
+            <div className="space-y-4">
+              <label className="flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50">
+                <input
+                  type="checkbox"
+                  checked={form.whatsappEnabled || false}
+                  onChange={(e) => setForm({ ...form, whatsappEnabled: e.target.checked })}
+                  className="w-5 h-5"
+                />
+                <div className="flex-1">
+                  <div className="font-medium">تفعيل خدمة WhatsApp</div>
+                  <div className="text-xs text-gray-500">عند التفعيل، سيُرسل OTP للعامل عند الدخول</div>
+                </div>
+              </label>
+
+              <div className={form.whatsappEnabled ? '' : 'opacity-50 pointer-events-none'}>
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="label">WASender API URL</label>
+                    <input
+                      type="url"
+                      className="input"
+                      placeholder="https://wasenderapi.com/api/send-message"
+                      value={form.whatsappApiUrl || ''}
+                      onChange={(e) => setForm({ ...form, whatsappApiUrl: e.target.value })}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      الرابط الافتراضي: https://wasenderapi.com/api/send-message
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="label">WASender API Key</label>
+                    <input
+                      type="password"
+                      className="input font-mono"
+                      placeholder="أدخل الـ API Key الخاص بحسابك في WASender"
+                      value={form.whatsappApiKey || ''}
+                      onChange={(e) => setForm({ ...form, whatsappApiKey: e.target.value })}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      احصل على المفتاح من لوحة تحكم WASender
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="label">اسم المرسل</label>
+                    <input
+                      className="input"
+                      placeholder="مثال: نظام إدارة العاملين"
+                      value={form.whatsappSenderName || ''}
+                      onChange={(e) => setForm({ ...form, whatsappSenderName: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="bg-yellow-50 border border-yellow-200 rounded p-3 mt-4 text-sm text-yellow-800">
+                  <strong>📚 خطوات الاشتراك:</strong>
+                  <ol className="mt-1 mr-4 list-decimal list-inside text-xs space-y-0.5">
+                    <li>اذهب لـ <a href="https://wasenderapi.com" target="_blank" rel="noreferrer" className="underline">wasenderapi.com</a></li>
+                    <li>سجل حساباً واحصل على 3 أيام تجربة مجانية</li>
+                    <li>اربط رقم WhatsApp عبر QR Code</li>
+                    <li>انسخ API Key والصقه هنا</li>
+                    <li>الباقة: $6/شهر = ~22 ريال</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="flex justify-end">
+          <button type="submit" disabled={loading} className="btn-primary disabled:opacity-50">
+            <Save size={18} />{loading ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default Settings;
