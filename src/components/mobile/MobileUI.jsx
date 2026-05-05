@@ -192,8 +192,6 @@ export const MobileWorkerCard = ({ worker, onClick, actions = [], badge }) => {
   );
 };
 
-};
-
 export const MobileFAB = ({ icon: Icon, onClick, label }) => (
   <button
     onClick={onClick}

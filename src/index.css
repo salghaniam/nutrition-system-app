@@ -1,9 +1,7 @@
+@import "./mobile-responsive.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import "./mobile-responsive.css";
-
 
 @layer base {
   html {
