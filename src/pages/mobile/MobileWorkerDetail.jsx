@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Edit, Trash2, FileHeart, Stethoscope, ArrowRightLeft, Phone, Calendar,
-  CreditCard, MapPin, Briefcase, Globe, Activity, FileText, ChevronLeft,
-  Building2
+  CreditCard, MapPin, Briefcase, Globe, Activity, FileText, Building2,
+  GraduationCap, FileImage, ExternalLink, Eye, Printer
 } from 'lucide-react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
@@ -14,6 +14,7 @@ import {
 import HealthCertificateRequestModal from '../../components/HealthCertificateRequestModal';
 import MedicalReportRequestModal from '../../components/MedicalReportRequestModal';
 import WorkerTransferModal from '../../components/WorkerTransferModal';
+import MobileDocumentViewer from '../../components/mobile/MobileDocumentViewer';
 
 const MobileWorkerDetail = () => {
   const { id } = useParams();
@@ -26,15 +27,17 @@ const MobileWorkerDetail = () => {
   const [certModal, setCertModal] = useState(false);
   const [reportModal, setReportModal] = useState(false);
   const [transferModal, setTransferModal] = useState(false);
+  
+  // 🆕 v23: استخدام MobileDocumentViewer
+  const [viewerUrl, setViewerUrl] = useState(null);
+  const [viewerTitle, setViewerTitle] = useState('');
 
   const canEdit = ['hospital_head', 'labor_supervisor', 'system_admin'].includes(user?.role);
   const canDelete = ['hospital_head', 'labor_supervisor', 'system_admin', 'system_supervisor'].includes(user?.role);
   const canRequest = ['hospital_head', 'labor_supervisor', 'site_manager'].includes(user?.role);
   const canTransfer = ['hospital_head', 'system_admin', 'system_supervisor'].includes(user?.role);
 
-  useEffect(() => {
-    loadWorker();
-  }, [id]);
+  useEffect(() => { loadWorker(); }, [id]);
 
   const loadWorker = async () => {
     try {
@@ -49,7 +52,7 @@ const MobileWorkerDetail = () => {
   };
 
   const handleDelete = async () => {
-    if (!confirm(`هل أنت متأكد من حذف "${worker.fullName}"؟`)) return;
+    if (!confirm(`هل أنت متأكد من حذف "${worker.name}"؟`)) return;
     try {
       await api.delete(`/workers/${id}`);
       toast.success('تم الحذف');
@@ -59,37 +62,41 @@ const MobileWorkerDetail = () => {
     }
   };
 
-  // عرض الشهادة المعتمدة
-  const handleViewCertificate = async (certId) => {
-    try {
-      const res = await api.get(`/health-certificates/${certId}/form`, { 
-        responseType: 'text' 
-      });
-      const w = window.open('', '_blank', 'width=900,height=1200');
-      if (w) {
-        w.document.write(res.data);
-        w.document.close();
-      } else {
-        toast.error('السماح للنوافذ المنبثقة مطلوب');
-      }
-    } catch (e) {
-      toast.error('فشل عرض الشهادة');
-    }
+  // 🆕 v23: عرض الشهادة في Modal داخلي
+  const handleViewCertificate = (certId) => {
+    setViewerUrl(`/health-certificates/${certId}/form`);
+    setViewerTitle('الشهادة الصحية');
   };
 
   if (loading) return <MobileLoadingState />;
   if (!worker) return null;
 
-  // Find active certificate
-  const activeCert = worker.healthCertificates?.find(c => c.status === 'approved');
-  const expDate = activeCert?.expiryDate ? new Date(activeCert.expiryDate) : null;
+  // معلومات الشهادة من حقل worker.healthCertificateExpiryDate
+  const expDate = worker.healthCertificateExpiryDate ? new Date(worker.healthCertificateExpiryDate) : null;
   const daysLeft = expDate ? Math.floor((expDate - new Date()) / (1000 * 60 * 60 * 24)) : null;
+
+  // التحقق من السعودي
+  const isSaudi = worker.nationality?.name === 'سعودي' || worker.nationality?.name?.includes('سعود');
+
+  // قائمة المرفقات
+  const attachments = [
+    { key: 'qualificationImage', label: 'صورة المؤهل', icon: GraduationCap },
+    !isSaudi && { key: 'passportImage', label: 'صورة الجواز', icon: FileImage },
+    { key: 'residencyImage', label: isSaudi ? 'صورة الهوية' : 'صورة الإقامة', icon: CreditCard },
+    { key: 'writtenPledgeImage', label: 'التعهد الخطي', icon: FileText },
+    { key: 'experienceCertificateImage', label: 'شهادة الخبرة', icon: FileImage },
+    !isSaudi && { key: 'certificatesTranslationImage', label: 'ترجمة الشهادات', icon: FileImage },
+    !isSaudi && { key: 'experienceTranslationImage', label: 'ترجمة الخبرة', icon: FileImage },
+    { key: 'appointmentLetterImage', label: 'خطاب التعيين', icon: FileText },
+    { key: 'professionalClassificationImage', label: 'التصنيف المهني', icon: FileImage },
+    { key: 'medicalReportImage', label: 'التقرير الطبي', icon: Stethoscope },
+    { key: 'healthCertificateImage', label: 'الشهادة الصحية', icon: FileHeart },
+  ].filter(Boolean);
 
   return (
     <div>
-      {/* Header */}
       <MobileBackHeader
-        title={worker.fullName}
+        title={worker.name}
         onBack={() => navigate('/workers')}
         action={
           canEdit && (
@@ -103,37 +110,60 @@ const MobileWorkerDetail = () => {
         }
       />
 
-      {/* Profile card */}
+      {/* 🆕 v23: Profile card مع الصورة الكبيرة */}
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-4">
         <div className="bg-gradient-to-br from-moh-primary to-moh-primary-dark text-white p-5 text-center">
           {worker.personalImage ? (
             <img
-              src={`/uploads/workers/${worker.personalImage}`}
-              alt={worker.fullName}
-              className="w-24 h-24 rounded-full object-cover mx-auto border-4 border-white/30"
+              src={worker.personalImage}
+              alt={worker.name}
+              className="w-28 h-28 rounded-full object-cover mx-auto border-4 border-white/30 shadow-lg"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
+              }}
             />
-          ) : (
-            <div className="w-24 h-24 rounded-full bg-white/20 mx-auto flex items-center justify-center font-bold text-3xl border-4 border-white/30">
-              {worker.fullName?.charAt(0)}
-            </div>
-          )}
-          <h2 className="text-xl font-bold mt-3">{worker.fullName}</h2>
-          <p className="text-sm opacity-90 mt-1">{worker.jobTitle?.name}</p>
+          ) : null}
+          <div 
+            className="w-28 h-28 rounded-full bg-white/20 mx-auto items-center justify-center font-bold text-4xl border-4 border-white/30"
+            style={{ display: worker.personalImage ? 'none' : 'flex' }}
+          >
+            {worker.name?.charAt(0)}
+          </div>
+          <h2 className="text-xl font-bold mt-3">{worker.name}</h2>
+          <p className="text-sm opacity-90 mt-1">{worker.jobTitle?.name || '—'}</p>
+          {isSaudi && <MobileBadge color="green">🇸🇦 سعودي</MobileBadge>}
         </div>
 
-        {/* Quick info */}
         <div className="p-4 space-y-2">
           <InfoRow icon={CreditCard} label="رقم الهوية" value={worker.idNumber} />
           {worker.phone && <InfoRow icon={Phone} label="الجوال" value={worker.phone} />}
           {worker.nationality?.name && <InfoRow icon={Globe} label="الجنسية" value={worker.nationality.name} />}
           {worker.religion?.name && <InfoRow icon={Activity} label="الديانة" value={worker.religion.name} />}
+          {worker.qualification?.name && <InfoRow icon={GraduationCap} label="المؤهل" value={worker.qualification.name} />}
           {worker.birthDate && <InfoRow icon={Calendar} label="تاريخ الميلاد" value={formatDate(worker.birthDate)} />}
+          {worker.workStartDate && <InfoRow icon={Briefcase} label="بداية العمل" value={formatDate(worker.workStartDate)} />}
           {worker.hospital?.name && <InfoRow icon={Building2} label="المستشفى" value={worker.hospital.name} />}
         </div>
       </div>
 
-      {/* Active Certificate */}
-      {activeCert && (
+      {/* بيانات الإقامة (للأجانب فقط) */}
+      {!isSaudi && (worker.residencyTitle || worker.sponsorName || worker.residencyExpiryDate) && (
+        <div className="bg-white rounded-2xl shadow-sm p-4 mb-4">
+          <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
+            <FileText size={18} />
+            بيانات الإقامة
+          </h3>
+          <div className="space-y-2">
+            {worker.residencyTitle && <InfoRow icon={CreditCard} label="مسمى الإقامة" value={worker.residencyTitle} />}
+            {worker.residencyExpiryDate && <InfoRow icon={Calendar} label="انتهاء الإقامة" value={formatDate(worker.residencyExpiryDate)} />}
+            {worker.sponsorName && <InfoRow icon={Briefcase} label="الكفيل" value={worker.sponsorName} />}
+          </div>
+        </div>
+      )}
+
+      {/* الشهادة الصحية */}
+      {worker.healthCertificateExpiryDate && (
         <div className="bg-white rounded-2xl shadow-sm p-4 mb-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold flex items-center gap-2">
@@ -150,18 +180,10 @@ const MobileWorkerDetail = () => {
           </div>
           
           <div className="space-y-2 text-sm">
-            {activeCert.issueDate && (
-              <div className="flex justify-between">
-                <span className="text-gray-500">تاريخ الإصدار:</span>
-                <span className="font-medium">{formatDate(activeCert.issueDate)}</span>
-              </div>
-            )}
-            {activeCert.expiryDate && (
-              <div className="flex justify-between">
-                <span className="text-gray-500">تاريخ الانتهاء:</span>
-                <span className="font-medium">{formatDate(activeCert.expiryDate)}</span>
-              </div>
-            )}
+            <div className="flex justify-between">
+              <span className="text-gray-500">الانتهاء:</span>
+              <span className="font-medium">{formatDate(worker.healthCertificateExpiryDate)}</span>
+            </div>
             {daysLeft !== null && daysLeft >= 0 && (
               <div className="flex justify-between">
                 <span className="text-gray-500">المتبقي:</span>
@@ -172,16 +194,57 @@ const MobileWorkerDetail = () => {
             )}
           </div>
 
-          <button
-            onClick={() => handleViewCertificate(activeCert.id)}
-            className="w-full mt-3 bg-moh-primary text-white py-2.5 rounded-lg text-sm font-medium active:scale-95 transition"
-          >
-            عرض الشهادة المعتمدة
-          </button>
+          {/* إن كانت هناك شهادة معتمدة، اعرضها */}
+          {worker.healthCertificates?.find(c => c.status === 'approved') && (
+            <button
+              onClick={() => {
+                const cert = worker.healthCertificates.find(c => c.status === 'approved');
+                handleViewCertificate(cert.id);
+              }}
+              className="w-full mt-3 bg-moh-primary text-white py-2.5 rounded-lg text-sm font-medium active:scale-95 transition flex items-center justify-center gap-2"
+            >
+              <Eye size={16} />
+              عرض الشهادة المعتمدة
+            </button>
+          )}
         </div>
       )}
 
-      {/* Actions */}
+      {/* 🆕 v23: المرفقات */}
+      {attachments.some(a => worker[a.key]) && (
+        <div className="bg-white rounded-2xl shadow-sm p-4 mb-4">
+          <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
+            <FileImage size={18} />
+            المرفقات
+          </h3>
+          <div className="grid grid-cols-2 gap-2">
+            {attachments.map(att => {
+              const fileUrl = worker[att.key];
+              if (!fileUrl) return null;
+              
+              return (
+                <a
+                  key={att.key}
+                  href={fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center gap-1.5 p-3 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition border border-gray-200"
+                >
+                  <div className="w-10 h-10 bg-moh-primary/10 text-moh-primary rounded-lg flex items-center justify-center">
+                    <att.icon size={18} />
+                  </div>
+                  <span className="text-xs text-gray-700 text-center font-medium leading-tight">
+                    {att.label}
+                  </span>
+                  <ExternalLink size={12} className="text-gray-400" />
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* الإجراءات */}
       <div className="space-y-2 mb-4">
         <h3 className="font-bold text-sm text-gray-700 px-1">⚡ الإجراءات</h3>
         
@@ -189,7 +252,7 @@ const MobileWorkerDetail = () => {
           <>
             <MobileActionButton
               icon={FileHeart}
-              label="طلب شهادة صحية جديدة"
+              label="طلب شهادة صحية"
               color="success"
               onClick={() => setCertModal(true)}
             />
@@ -230,35 +293,6 @@ const MobileWorkerDetail = () => {
         )}
       </div>
 
-      {/* History */}
-      {worker.healthCertificates?.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm p-4 mb-4">
-          <h3 className="font-bold mb-3 flex items-center gap-2">
-            <FileText size={18} />
-            سجل الشهادات ({worker.healthCertificates.length})
-          </h3>
-          <div className="space-y-2">
-            {worker.healthCertificates.slice(0, 5).map(cert => (
-              <div key={cert.id} className="border-r-4 border-moh-primary bg-gray-50 rounded-lg p-2.5">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="text-xs text-gray-500">طلب #{cert.id}</div>
-                    <div className="text-sm">{formatDate(cert.createdAt)}</div>
-                  </div>
-                  <MobileBadge color={
-                    cert.status === 'approved' ? 'green' :
-                    cert.status === 'rejected' ? 'red' : 'yellow'
-                  }>
-                    {cert.status === 'approved' ? 'معتمدة' : 
-                     cert.status === 'rejected' ? 'مرفوضة' : 'قيد المراجعة'}
-                  </MobileBadge>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Modals */}
       {certModal && (
         <HealthCertificateRequestModal
@@ -279,6 +313,15 @@ const MobileWorkerDetail = () => {
           worker={worker}
           onClose={() => setTransferModal(false)}
           onSuccess={() => { setTransferModal(false); loadWorker(); }}
+        />
+      )}
+      
+      {/* 🆕 v23: Document viewer modal */}
+      {viewerUrl && (
+        <MobileDocumentViewer
+          url={viewerUrl}
+          title={viewerTitle}
+          onClose={() => setViewerUrl(null)}
         />
       )}
     </div>

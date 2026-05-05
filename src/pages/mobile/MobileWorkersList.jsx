@@ -14,6 +14,7 @@ import {
 import HealthCertificateRequestModal from '../../components/HealthCertificateRequestModal';
 import MedicalReportRequestModal from '../../components/MedicalReportRequestModal';
 import WorkerTransferModal from '../../components/WorkerTransferModal';
+import MobileDocumentViewer from '../../components/mobile/MobileDocumentViewer';
 
 const MobileWorkersList = () => {
   const { user } = useAuth();
@@ -46,6 +47,8 @@ const MobileWorkersList = () => {
   const [certModalWorker, setCertModalWorker] = useState(null);
   const [reportModalWorker, setReportModalWorker] = useState(null);
   const [transferModalWorker, setTransferModalWorker] = useState(null);
+  const [viewerUrl, setViewerUrl] = useState(null);
+  const [viewerTitle, setViewerTitle] = useState('');
 
   // Permissions
   const canRequest = ['hospital_head', 'labor_supervisor', 'site_manager'].includes(user?.role);
@@ -140,36 +143,14 @@ const MobileWorkersList = () => {
   };
 
   // 🆕 v22.2: عرض الشهادة المعتمدة (نفس منطق WorkersList الديسكتوب)
-  const handleViewApprovedCertificate = async (certId) => {
-    try {
-      const res = await api.get(`/health-certificates/${certId}/form`, {
-        responseType: 'text'
-      });
-      const w = window.open('', '_blank', 'width=900,height=1200');
-      if (w) {
-        w.document.write(res.data);
-        w.document.close();
-      } else {
-        toast.error('السماح للنوافذ المنبثقة مطلوب');
-      }
-    } catch (e) {
-      toast.error('فشل عرض الشهادة');
-    }
+  const handleViewApprovedCertificate = (certId) => {
+    setViewerUrl(`/health-certificates/${certId}/form`);
+    setViewerTitle('الشهادة الصحية');
   };
 
-  const handleViewApprovedReport = async (reportId) => {
-    try {
-      const res = await api.get(`/medical-reports/${reportId}/form`, {
-        responseType: 'text'
-      });
-      const w = window.open('', '_blank', 'width=900,height=1100');
-      if (w) {
-        w.document.write(res.data);
-        w.document.close();
-      }
-    } catch (e) {
-      toast.error('فشل عرض التقرير');
-    }
+  const handleViewApprovedReport = (reportId) => {
+    setViewerUrl(`/medical-reports/${reportId}/form`);
+    setViewerTitle('التقرير الطبي');
   };
 
   const filteredWorkers = workers.filter(w => {
@@ -396,6 +377,14 @@ const MobileWorkersList = () => {
           worker={transferModalWorker}
           onClose={() => setTransferModalWorker(null)}
           onSuccess={() => { setTransferModalWorker(null); loadWorkers(); }}
+        />
+      )}
+
+      {viewerUrl && (
+        <MobileDocumentViewer
+          url={viewerUrl}
+          title={viewerTitle}
+          onClose={() => setViewerUrl(null)}
         />
       )}
     </div>

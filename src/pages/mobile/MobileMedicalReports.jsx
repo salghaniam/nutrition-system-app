@@ -3,6 +3,7 @@ import { Stethoscope, Eye, Trash2, CheckCircle, Printer } from 'lucide-react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
+import MobileDocumentViewer from '../../components/mobile/MobileDocumentViewer';
 import { 
   MobileSearchBar, MobileEmptyState, MobileLoadingState, MobileBadge 
 } from '../../components/mobile/MobileUI';
@@ -13,6 +14,7 @@ const MobileMedicalReports = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [viewerUrl, setViewerUrl] = useState(null);
 
   const canApprove = ['system_admin', 'system_supervisor'].includes(user?.role);
   const canDelete = ['system_admin', 'system_supervisor', 'hospital_head', 'labor_supervisor'].includes(user?.role);
@@ -31,14 +33,8 @@ const MobileMedicalReports = () => {
     }
   };
 
-  const handleView = async (id) => {
-    try {
-      const res = await api.get(`/medical-reports/${id}/form`, { responseType: 'text' });
-      const w = window.open('', '_blank', 'width=900,height=1100');
-      if (w) { w.document.write(res.data); w.document.close(); }
-    } catch (e) {
-      toast.error('فشل عرض التقرير');
-    }
+  const handleView = (id) => {
+    setViewerUrl(`/medical-reports/${id}/form`);
   };
 
   const handleApprove = async (id) => {
@@ -161,6 +157,14 @@ const MobileMedicalReports = () => {
             </div>
           ))}
         </div>
+      )}
+    
+      {viewerUrl && (
+        <MobileDocumentViewer
+          url={viewerUrl}
+          title="التقرير الطبي"
+          onClose={() => setViewerUrl(null)}
+        />
       )}
     </div>
   );

@@ -9,6 +9,7 @@ import {
   MobileSearchBar, MobileEmptyState, MobileLoadingState, MobileBadge 
 } from '../../components/mobile/MobileUI';
 import CertificateApprovalModal from '../../components/CertificateApprovalModal';
+import MobileDocumentViewer from '../../components/mobile/MobileDocumentViewer';
 
 const MobileHealthCertificates = () => {
   const { user } = useAuth();
@@ -17,6 +18,7 @@ const MobileHealthCertificates = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [approvalCertId, setApprovalCertId] = useState(null);
+  const [viewerUrl, setViewerUrl] = useState(null);
 
   const canApprove = ['system_admin', 'system_supervisor'].includes(user?.role);
   const canDelete = ['system_admin', 'system_supervisor', 'hospital_head', 'labor_supervisor'].includes(user?.role);
@@ -37,15 +39,8 @@ const MobileHealthCertificates = () => {
     }
   };
 
-  const handleView = async (id) => {
-    try {
-      const res = await api.get(`/health-certificates/${id}/form`, { responseType: 'text' });
-      const w = window.open('', '_blank', 'width=900,height=1200');
-      if (w) { w.document.write(res.data); w.document.close(); }
-      else toast.error('السماح للنوافذ مطلوب');
-    } catch (e) {
-      toast.error('فشل عرض الشهادة');
-    }
+  const handleView = (id) => {
+    setViewerUrl(`/health-certificates/${id}/form`);
   };
 
   const handleDelete = async (id) => {
@@ -206,6 +201,14 @@ const MobileHealthCertificates = () => {
           certId={approvalCertId}
           onClose={() => setApprovalCertId(null)}
           onSuccess={() => { setApprovalCertId(null); load(); }}
+        />
+      )}
+      
+      {viewerUrl && (
+        <MobileDocumentViewer
+          url={viewerUrl}
+          title="الشهادة الصحية"
+          onClose={() => setViewerUrl(null)}
         />
       )}
     </div>

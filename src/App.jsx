@@ -32,6 +32,11 @@ import MobileMedicalReports from './pages/mobile/MobileMedicalReports';
 import MobileWorkerTransfers from './pages/mobile/MobileWorkerTransfers';
 import MobileWorkerForm from './pages/mobile/MobileWorkerForm';
 import MobileDevices from './pages/mobile/MobileDevices';
+
+// 🆕 v23: Mobile Forms جديدة
+import MobileUserForm from './pages/mobile/MobileUserForm';
+import MobileHospitalForm from './pages/mobile/MobileHospitalForm';
+import MobileDeviceForm from './pages/mobile/MobileDeviceForm';
 import {
   MobileUsers, MobileHospitals, MobileDeletedWorkers,
   MobileLookups, MobileAuditLogs, MobileReports, 
@@ -141,6 +146,23 @@ const SmartAttachmentUpdates = () => {
   return isMobile ? <MobileAttachmentUpdates /> : <AttachmentUpdates />;
 };
 
+// 🆕 v23: Smart components للنماذج الجديدة
+const SmartUserForm = () => {
+  const isMobile = useIsMobile();
+  return isMobile ? <MobileUserForm /> : <Users />;
+};
+
+const SmartHospitalForm = () => {
+  const isMobile = useIsMobile();
+  return isMobile ? <MobileHospitalForm /> : <Hospitals />;
+};
+
+const SmartDeviceForm = () => {
+  const isMobile = useIsMobile();
+  return isMobile ? <MobileDeviceForm /> : <Devices />;
+};
+
+
 
 
 function App() {
@@ -172,6 +194,12 @@ function App() {
         <Route path="worker-transfers" element={<SmartWorkerTransfers />} />
         <Route path="attachment-updates" element={<SmartAttachmentUpdates />} />
         <Route path="users" element={<SmartUsers />} />
+        <Route path="users/new" element={<SmartUserForm />} />
+        <Route path="users/:id/edit" element={<SmartUserForm />} />
+        <Route path="hospitals/new" element={<SmartHospitalForm />} />
+        <Route path="hospitals/:id/edit" element={<SmartHospitalForm />} />
+        <Route path="devices/new" element={<SmartDeviceForm />} />
+        <Route path="devices/:id/edit" element={<SmartDeviceForm />} />
         <Route path="lookups" element={<SmartLookups />} />
         <Route path="reports" element={<SmartReports />} />
         <Route path="settings" element={<SmartSettings />} />
