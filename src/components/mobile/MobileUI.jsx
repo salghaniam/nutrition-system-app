@@ -1,19 +1,12 @@
 // ===================================================================
-// 🆕 v22: Mobile UI Components
-// مكونات مشتركة للصفحات الموبايل
+// 🆕 v22.2: Mobile UI Components (مُحدّث)
 // ===================================================================
-import { Search, ChevronLeft, AlertCircle, Loader2 } from 'lucide-react';
+import { Search, ChevronLeft, AlertCircle, Loader2, FileHeart, Eye } from 'lucide-react';
 
-/**
- * MobilePageHeader - رأس صفحة موبايل مع زر رجوع
- */
 export const MobilePageHeader = ({ title, subtitle, onBack, actions }) => (
   <div className="bg-white shadow-sm sticky top-[60px] z-20 -mx-3 px-3 py-3 mb-3 flex items-center gap-3">
     {onBack && (
-      <button 
-        onClick={onBack}
-        className="p-2 -mr-2 hover:bg-gray-100 active:bg-gray-200 rounded-lg transition"
-      >
+      <button onClick={onBack} className="p-2 -mr-2 hover:bg-gray-100 active:bg-gray-200 rounded-lg">
         <ChevronLeft size={22} className="rotate-180" />
       </button>
     )}
@@ -25,15 +18,9 @@ export const MobilePageHeader = ({ title, subtitle, onBack, actions }) => (
   </div>
 );
 
-/**
- * MobileSearchBar - شريط بحث للموبايل
- */
 export const MobileSearchBar = ({ value, onChange, placeholder = 'بحث...' }) => (
   <div className="relative mb-3">
-    <Search 
-      size={18} 
-      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" 
-    />
+    <Search size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
     <input
       type="text"
       value={value}
@@ -44,9 +31,6 @@ export const MobileSearchBar = ({ value, onChange, placeholder = 'بحث...' }) 
   </div>
 );
 
-/**
- * MobileEmptyState - حالة عدم وجود بيانات
- */
 export const MobileEmptyState = ({ icon: Icon = AlertCircle, title, message, action }) => (
   <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -58,9 +42,6 @@ export const MobileEmptyState = ({ icon: Icon = AlertCircle, title, message, act
   </div>
 );
 
-/**
- * MobileLoadingState - مؤشر تحميل للموبايل
- */
 export const MobileLoadingState = ({ message = 'جاري التحميل...' }) => (
   <div className="flex flex-col items-center justify-center py-12">
     <Loader2 size={40} className="text-moh-primary animate-spin mb-3" />
@@ -68,9 +49,6 @@ export const MobileLoadingState = ({ message = 'جاري التحميل...' }) =
   </div>
 );
 
-/**
- * MobileStatCard - بطاقة إحصائية
- */
 export const MobileStatCard = ({ icon: Icon, label, value, color = 'green', onClick }) => {
   const colors = {
     green: 'from-green-500 to-green-600',
@@ -79,7 +57,6 @@ export const MobileStatCard = ({ icon: Icon, label, value, color = 'green', onCl
     red: 'from-red-500 to-red-600',
     purple: 'from-purple-500 to-purple-600',
   };
-  
   return (
     <button
       onClick={onClick}
@@ -92,9 +69,6 @@ export const MobileStatCard = ({ icon: Icon, label, value, color = 'green', onCl
   );
 };
 
-/**
- * MobileActionButton - زر إجراء كبير
- */
 export const MobileActionButton = ({ icon: Icon, label, onClick, color = 'primary', fullWidth = true }) => {
   const colors = {
     primary: 'bg-moh-primary hover:bg-moh-primary-dark text-white',
@@ -103,7 +77,6 @@ export const MobileActionButton = ({ icon: Icon, label, onClick, color = 'primar
     success: 'bg-green-500 hover:bg-green-600 text-white',
     warning: 'bg-yellow-500 hover:bg-yellow-600 text-white',
   };
-  
   return (
     <button
       onClick={onClick}
@@ -115,9 +88,6 @@ export const MobileActionButton = ({ icon: Icon, label, onClick, color = 'primar
   );
 };
 
-/**
- * MobileBadge - شارة حالة
- */
 export const MobileBadge = ({ children, color = 'gray' }) => {
   const colors = {
     gray: 'bg-gray-100 text-gray-700',
@@ -127,7 +97,6 @@ export const MobileBadge = ({ children, color = 'gray' }) => {
     blue: 'bg-blue-100 text-blue-700',
     purple: 'bg-purple-100 text-purple-700',
   };
-  
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${colors[color]}`}>
       {children}
@@ -136,41 +105,68 @@ export const MobileBadge = ({ children, color = 'gray' }) => {
 };
 
 /**
- * MobileWorkerCard - بطاقة عامل
+ * 🆕 MobileWorkerCard - مُصلح في v22.2
+ * - يدعم حقول مختلفة للاسم: fullName, name
+ * - يدعم حقول مختلفة للصورة: personalImage, image, photo
+ * - يستخدم URL مطلق للصورة (يعمل في التطبيق)
  */
 export const MobileWorkerCard = ({ worker, onClick, actions = [], badge }) => {
+  // 🔧 v22.2: دعم حقول متعددة
+  const name = worker.fullName || worker.name || 'بدون اسم';
+  const imageField = worker.personalImage || worker.image || worker.photo;
+  
+  // 🔧 v22.2: URL مطلق للصورة (يعمل في التطبيق Capacitor)
+  const getImageUrl = (filename) => {
+    if (!filename) return null;
+    if (filename.startsWith('http')) return filename;
+    // استخدم origin للحصول على HTTPS كامل (https://hi-chat.com/uploads/...)
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    // في التطبيق، origin قد يكون "https://localhost" - نستخدم hi-chat.com مباشرة
+    const isApp = window.Capacitor?.isNativePlatform?.();
+    const baseUrl = isApp ? 'https://hi-chat.com' : origin;
+    return `${baseUrl}/uploads/workers/${filename}`;
+  };
+  
+  const imageUrl = getImageUrl(imageField);
+
   return (
-    <div 
-      className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden active:scale-[0.99] transition"
-    >
-      {/* Header - معلومات العامل */}
-      <div 
-        className="p-4 flex items-start gap-3 cursor-pointer"
-        onClick={onClick}
-      >
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden active:scale-[0.99] transition">
+      <div className="p-4 flex items-start gap-3 cursor-pointer" onClick={onClick}>
         {/* صورة */}
         <div className="flex-shrink-0">
-          {worker.personalImage ? (
+          {imageUrl ? (
             <img
-              src={`/uploads/workers/${worker.personalImage}`}
-              alt={worker.fullName}
+              src={imageUrl}
+              alt={name}
               className="w-14 h-14 rounded-full object-cover border-2 border-gray-100"
-              onError={(e) => { e.target.style.display = 'none'; }}
+              onError={(e) => {
+                // عند فشل تحميل الصورة، نعرض الحرف الأول
+                e.target.style.display = 'none';
+                if (e.target.nextSibling) {
+                  e.target.nextSibling.style.display = 'flex';
+                }
+              }}
             />
-          ) : (
-            <div className="w-14 h-14 rounded-full bg-moh-primary text-white flex items-center justify-center font-bold text-lg">
-              {worker.fullName?.charAt(0)}
-            </div>
-          )}
+          ) : null}
+          <div 
+            className={`w-14 h-14 rounded-full bg-moh-primary text-white flex items-center justify-center font-bold text-lg ${imageUrl ? 'hidden' : 'flex'}`}
+            style={{ display: imageUrl ? 'none' : 'flex' }}
+          >
+            {name.charAt(0)}
+          </div>
         </div>
         
         {/* بيانات */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
-              <h3 className="font-bold text-gray-900 truncate">{worker.fullName}</h3>
-              <p className="text-sm text-gray-600 truncate">{worker.jobTitle?.name || '—'}</p>
-              <p className="text-xs text-gray-400 mt-0.5">رقم الهوية: {worker.idNumber}</p>
+              <h3 className="font-bold text-gray-900 truncate">{name}</h3>
+              <p className="text-sm text-gray-600 truncate">
+                {worker.jobTitle?.name || worker.jobTitleName || '—'}
+              </p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                رقم الهوية: {worker.idNumber || '—'}
+              </p>
             </div>
             {badge}
           </div>
@@ -183,16 +179,13 @@ export const MobileWorkerCard = ({ worker, onClick, actions = [], badge }) => {
         </div>
       </div>
       
-      {/* أزرار الإجراءات */}
+      {/* أزرار */}
       {actions.length > 0 && (
         <div className="border-t border-gray-100 bg-gray-50 px-2 py-1.5 flex flex-wrap gap-1">
           {actions.map((action, idx) => (
             <button
               key={idx}
-              onClick={(e) => {
-                e.stopPropagation();
-                action.onClick();
-              }}
+              onClick={(e) => { e.stopPropagation(); action.onClick(); }}
               className={`flex-1 min-w-[70px] flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-medium transition active:scale-95 ${
                 action.color === 'red' ? 'bg-red-100 text-red-700 active:bg-red-200' :
                 action.color === 'green' ? 'bg-green-100 text-green-700 active:bg-green-200' :
@@ -212,9 +205,6 @@ export const MobileWorkerCard = ({ worker, onClick, actions = [], badge }) => {
   );
 };
 
-/**
- * MobileFAB - Floating Action Button
- */
 export const MobileFAB = ({ icon: Icon, onClick, label }) => (
   <button
     onClick={onClick}
@@ -226,18 +216,27 @@ export const MobileFAB = ({ icon: Icon, onClick, label }) => (
   </button>
 );
 
-/**
- * MobileBackHeader - Header مع زر رجوع للصفحات الفرعية
- */
 export const MobileBackHeader = ({ title, onBack, action }) => (
   <div className="bg-white border-b border-gray-200 -mx-3 px-3 py-3 mb-3 flex items-center gap-3 sticky top-[60px] z-20">
-    <button 
-      onClick={onBack}
-      className="p-2 -mr-2 hover:bg-gray-100 active:bg-gray-200 rounded-lg"
-    >
+    <button onClick={onBack} className="p-2 -mr-2 hover:bg-gray-100 active:bg-gray-200 rounded-lg">
       <ChevronLeft size={22} className="rotate-180" />
     </button>
     <h2 className="flex-1 font-bold text-base truncate">{title}</h2>
     {action}
   </div>
 );
+
+/**
+ * 🆕 v22.2: Helper لـ URL الكامل للصورة
+ * يستخدم في كل الصفحات التي تعرض صور
+ */
+export const getFullImageUrl = (relativePath) => {
+  if (!relativePath) return null;
+  if (relativePath.startsWith('http')) return relativePath;
+  const isApp = typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.();
+  const baseUrl = isApp ? 'https://hi-chat.com' : (typeof window !== 'undefined' ? window.location.origin : '');
+  
+  // إن لم يبدأ بـ /uploads/، نضيف /uploads/
+  const path = relativePath.startsWith('/') ? relativePath : `/uploads/workers/${relativePath}`;
+  return `${baseUrl}${path}`;
+};

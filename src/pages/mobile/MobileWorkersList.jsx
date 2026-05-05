@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Plus, Eye, Edit, Trash2, Filter, Users, FileHeart, Stethoscope, 
-  ArrowRightLeft, X, Printer
+  ArrowRightLeft, X, Printer, FileText
 } from 'lucide-react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
@@ -36,6 +36,12 @@ const MobileWorkersList = () => {
     hospitals: [],
   });
 
+  // 🆕 v22.2: حالة الشهادات والتقارير لكل عامل (مماثل WorkersList الديسكتوب)
+  const [activeReports, setActiveReports] = useState({});
+  const [activeCertificates, setActiveCertificates] = useState({});
+  const [approvedReports, setApprovedReports] = useState({});
+  const [approvedCertificates, setApprovedCertificates] = useState({});
+
   // Modals
   const [certModalWorker, setCertModalWorker] = useState(null);
   const [reportModalWorker, setReportModalWorker] = useState(null);
@@ -50,6 +56,7 @@ const MobileWorkersList = () => {
   useEffect(() => {
     loadWorkers();
     loadLookups();
+    loadCertificatesAndReports();
   }, [filters]);
 
   const loadWorkers = async () => {
@@ -84,6 +91,43 @@ const MobileWorkersList = () => {
     } catch (e) {}
   };
 
+  // 🆕 v22.2: تحميل الشهادات والتقارير لتحديد الأزرار المعروضة
+  const loadCertificatesAndReports = async () => {
+    try {
+      // الشهادات الفعالة (pending/approved)
+      const certs = await api.get('/health-certificates');
+      const certsList = certs.data.data || [];
+      
+      const activeCs = {};
+      const approvedCs = {};
+      certsList.forEach(c => {
+        if (c.status === 'approved') {
+          if (!approvedCs[c.workerId]) approvedCs[c.workerId] = c;
+        } else if (['pending', 'pending_approval'].includes(c.status)) {
+          if (!activeCs[c.workerId]) activeCs[c.workerId] = c;
+        }
+      });
+      setActiveCertificates(activeCs);
+      setApprovedCertificates(approvedCs);
+
+      // التقارير
+      const reports = await api.get('/medical-reports').catch(() => ({ data: { data: [] } }));
+      const reportsList = reports.data.data || [];
+      
+      const activeRs = {};
+      const approvedRs = {};
+      reportsList.forEach(r => {
+        if (r.status === 'approved') {
+          if (!approvedRs[r.workerId]) approvedRs[r.workerId] = r;
+        } else if (['pending', 'pending_approval'].includes(r.status)) {
+          if (!activeRs[r.workerId]) activeRs[r.workerId] = r;
+        }
+      });
+      setActiveReports(activeRs);
+      setApprovedReports(approvedRs);
+    } catch (e) {}
+  };
+
   const handleDelete = async (id, name) => {
     if (!confirm(`هل أنت متأكد من حذف "${name}"؟`)) return;
     try {
@@ -95,75 +139,130 @@ const MobileWorkersList = () => {
     }
   };
 
-  // Filter بحث
+  // 🆕 v22.2: عرض الشهادة المعتمدة (نفس منطق WorkersList الديسكتوب)
+  const handleViewApprovedCertificate = async (certId) => {
+    try {
+      const res = await api.get(`/health-certificates/${certId}/form`, {
+        responseType: 'text'
+      });
+      const w = window.open('', '_blank', 'width=900,height=1200');
+      if (w) {
+        w.document.write(res.data);
+        w.document.close();
+      } else {
+        toast.error('السماح للنوافذ المنبثقة مطلوب');
+      }
+    } catch (e) {
+      toast.error('فشل عرض الشهادة');
+    }
+  };
+
+  const handleViewApprovedReport = async (reportId) => {
+    try {
+      const res = await api.get(`/medical-reports/${reportId}/form`, {
+        responseType: 'text'
+      });
+      const w = window.open('', '_blank', 'width=900,height=1100');
+      if (w) {
+        w.document.write(res.data);
+        w.document.close();
+      }
+    } catch (e) {
+      toast.error('فشل عرض التقرير');
+    }
+  };
+
   const filteredWorkers = workers.filter(w => {
     if (!search) return true;
     const q = search.toLowerCase();
+    const name = w.fullName || w.name || '';
     return (
-      w.fullName?.toLowerCase().includes(q) ||
+      name.toLowerCase().includes(q) ||
       w.idNumber?.includes(q) ||
       w.phone?.includes(q)
     );
   });
 
-  // Build actions for each worker
+  // 🆕 v22.2: بناء الإجراءات بناءً على حالة الشهادات
   const getActions = (worker) => {
     const actions = [];
     
     actions.push({
-      icon: Eye,
-      label: 'عرض',
-      color: 'blue',
+      icon: Eye, label: 'عرض', color: 'blue',
       onClick: () => navigate(`/workers/${worker.id}`),
     });
+
+    // الشهادة الصحية - منطق ذكي
+    const approvedCert = approvedCertificates[worker.id];
+    const activeCert = activeCertificates[worker.id];
     
-    if (canRequest) {
+    if (approvedCert) {
+      // ✅ شهادة معتمدة → زر "عرض الشهادة"
       actions.push({
-        icon: FileHeart,
-        label: 'شهادة',
-        color: 'green',
+        icon: FileHeart, label: 'عرض الشهادة', color: 'green',
+        onClick: () => handleViewApprovedCertificate(approvedCert.id),
+      });
+    } else if (activeCert) {
+      // ⏳ طلب قيد المعالجة → معلومة فقط
+      actions.push({
+        icon: FileHeart, label: 'بانتظار الاعتماد', color: 'yellow',
+        onClick: () => toast('الطلب قيد المراجعة', { icon: '⏳' }),
+      });
+    } else if (canRequest) {
+      // ➕ لا توجد شهادة → زر "طلب شهادة"
+      actions.push({
+        icon: FileHeart, label: 'طلب شهادة', color: 'green',
         onClick: () => setCertModalWorker(worker),
       });
-      
+    }
+
+    // التقرير الطبي - نفس المنطق
+    const approvedReport = approvedReports[worker.id];
+    const activeReport = activeReports[worker.id];
+    
+    if (approvedReport) {
       actions.push({
-        icon: Stethoscope,
-        label: 'تقرير',
-        color: 'yellow',
+        icon: Stethoscope, label: 'عرض التقرير', color: 'yellow',
+        onClick: () => handleViewApprovedReport(approvedReport.id),
+      });
+    } else if (activeReport) {
+      actions.push({
+        icon: Stethoscope, label: 'تقرير قيد المعالجة', color: 'yellow',
+        onClick: () => toast('الطلب قيد المراجعة', { icon: '⏳' }),
+      });
+    } else if (canRequest) {
+      actions.push({
+        icon: Stethoscope, label: 'طلب تقرير', color: 'yellow',
         onClick: () => setReportModalWorker(worker),
       });
     }
-    
+
     if (canTransfer) {
       actions.push({
-        icon: ArrowRightLeft,
-        label: 'نقل',
-        color: 'blue',
+        icon: ArrowRightLeft, label: 'نقل', color: 'blue',
         onClick: () => setTransferModalWorker(worker),
       });
     }
     
     if (canDelete) {
       actions.push({
-        icon: Trash2,
-        label: 'حذف',
-        color: 'red',
-        onClick: () => handleDelete(worker.id, worker.fullName),
+        icon: Trash2, label: 'حذف', color: 'red',
+        onClick: () => handleDelete(worker.id, worker.fullName || worker.name),
       });
     }
     
     return actions;
   };
 
-  // Get certificate status badge
+  // Status badge
   const getStatusBadge = (worker) => {
-    const cert = worker.healthCertificates?.find(c => c.status === 'approved');
+    const cert = approvedCertificates[worker.id];
     if (!cert) return <MobileBadge color="gray">لا توجد شهادة</MobileBadge>;
     
     const expDate = cert.expiryDate ? new Date(cert.expiryDate) : null;
     if (!expDate) return <MobileBadge color="gray">—</MobileBadge>;
     
-    const now = new Date();
-    const daysLeft = Math.floor((expDate - now) / (1000 * 60 * 60 * 24));
+    const daysLeft = Math.floor((expDate - new Date()) / (1000 * 60 * 60 * 24));
     
     if (daysLeft < 0) return <MobileBadge color="red">منتهية</MobileBadge>;
     if (daysLeft < 30) return <MobileBadge color="yellow">قريبة الانتهاء</MobileBadge>;
@@ -174,21 +273,17 @@ const MobileWorkersList = () => {
 
   return (
     <div>
-      {/* Search bar */}
       <MobileSearchBar
         value={search}
         onChange={setSearch}
-        placeholder="ابحث بالاسم، رقم الهوية، الهاتف..."
+        placeholder="ابحث بالاسم، رقم الهوية..."
       />
 
-      {/* Filter toggle + count */}
       <div className="flex items-center justify-between mb-3">
         <button
           onClick={() => setShowFilters(!showFilters)}
           className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition ${
-            activeFiltersCount > 0
-              ? 'bg-moh-primary text-white'
-              : 'bg-white text-gray-700 border border-gray-200'
+            activeFiltersCount > 0 ? 'bg-moh-primary text-white' : 'bg-white text-gray-700 border border-gray-200'
           }`}
         >
           <Filter size={16} />
@@ -199,13 +294,9 @@ const MobileWorkersList = () => {
             </span>
           )}
         </button>
-
-        <div className="text-xs text-gray-500">
-          {filteredWorkers.length} عامل
-        </div>
+        <div className="text-xs text-gray-500">{filteredWorkers.length} عامل</div>
       </div>
 
-      {/* Filters panel */}
       {showFilters && (
         <div className="bg-white rounded-xl p-3 mb-3 space-y-2 border border-gray-200">
           <select
@@ -214,9 +305,7 @@ const MobileWorkersList = () => {
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
           >
             <option value="">كل الجنسيات</option>
-            {lookups.nationalities.map(n => (
-              <option key={n.id} value={n.id}>{n.name}</option>
-            ))}
+            {lookups.nationalities.map(n => <option key={n.id} value={n.id}>{n.name}</option>)}
           </select>
           
           <select
@@ -225,9 +314,7 @@ const MobileWorkersList = () => {
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
           >
             <option value="">كل المسميات الوظيفية</option>
-            {lookups.jobTitles.map(j => (
-              <option key={j.id} value={j.id}>{j.name}</option>
-            ))}
+            {lookups.jobTitles.map(j => <option key={j.id} value={j.id}>{j.name}</option>)}
           </select>
           
           {['system_admin', 'system_supervisor'].includes(user?.role) && (
@@ -237,9 +324,7 @@ const MobileWorkersList = () => {
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
             >
               <option value="">كل المستشفيات</option>
-              {lookups.hospitals.map(h => (
-                <option key={h.id} value={h.id}>{h.name}</option>
-              ))}
+              {lookups.hospitals.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
             </select>
           )}
           
@@ -248,14 +333,12 @@ const MobileWorkersList = () => {
               onClick={() => setFilters({ nationalityId: '', jobTitleId: '', hospitalId: '' })}
               className="w-full text-red-600 text-sm py-1 hover:bg-red-50 rounded-lg flex items-center justify-center gap-1"
             >
-              <X size={14} />
-              مسح الفلاتر
+              <X size={14} /> مسح الفلاتر
             </button>
           )}
         </div>
       )}
 
-      {/* List */}
       {loading ? (
         <MobileLoadingState />
       ) : filteredWorkers.length === 0 ? (
@@ -278,32 +361,24 @@ const MobileWorkersList = () => {
         </div>
       )}
 
-      {/* FAB for add */}
       {canAdd && (
-        <MobileFAB
-          icon={Plus}
-          label="إضافة عامل"
-          onClick={() => navigate('/workers/new')}
-        />
+        <MobileFAB icon={Plus} label="إضافة عامل" onClick={() => navigate('/workers/new')} />
       )}
 
-      {/* Modals */}
       {certModalWorker && (
         <HealthCertificateRequestModal
           worker={certModalWorker}
           onClose={() => setCertModalWorker(null)}
-          onSuccess={() => { setCertModalWorker(null); loadWorkers(); }}
+          onSuccess={() => { setCertModalWorker(null); loadWorkers(); loadCertificatesAndReports(); }}
         />
       )}
-      
       {reportModalWorker && (
         <MedicalReportRequestModal
           worker={reportModalWorker}
           onClose={() => setReportModalWorker(null)}
-          onSuccess={() => { setReportModalWorker(null); loadWorkers(); }}
+          onSuccess={() => { setReportModalWorker(null); loadWorkers(); loadCertificatesAndReports(); }}
         />
       )}
-      
       {transferModalWorker && (
         <WorkerTransferModal
           worker={transferModalWorker}
