@@ -47,7 +47,7 @@ const MedicalReportRequestModal = ({ worker, onClose, onSuccess }) => {
       toast.success('تم إنشاء طلب التقرير - سيتم فتح النموذج للطباعة');
 
       // فتح نافذة الطباعة مع التوكن في الـ URL (لأن الفتح في نافذة جديدة)
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const formUrl = `/api/medical-reports/${reportId}/form`;
 
       // طريقة 1: فتح في نافذة جديدة مع التوكن

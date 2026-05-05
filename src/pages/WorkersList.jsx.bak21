@@ -113,7 +113,7 @@ const WorkersList = () => {
   // عرض الشهادة الصحية المعتمدة (نموذج النظام)
   const handleViewApprovedCertificate = async (certId) => {
     try {
-      const token = sessionStorage.getItem('token');
+      const token = localStorage.getItem('token');
       const res = await fetch(`/api/health-certificates/${certId}/form`, {
         headers: { Authorization: `Bearer ${token}` },
       });

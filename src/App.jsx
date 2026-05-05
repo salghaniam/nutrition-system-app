@@ -20,6 +20,12 @@ import WorkerTransfers from './pages/WorkerTransfers';
 import AttachmentUpdates from './pages/AttachmentUpdates';
 import DeletedWorkers from './pages/DeletedWorkers';
 import AuditLogs from './pages/AuditLogs';
+// 🆕 v22: Mobile pages
+import { useIsMobile } from './utils/deviceDetection';
+import MobileLayout from './layouts/MobileLayout';
+import MobileDashboard from './pages/mobile/MobileDashboard';
+import MobileWorkersList from './pages/mobile/MobileWorkersList';
+import MobileWorkerDetail from './pages/mobile/MobileWorkerDetail';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -33,6 +39,30 @@ const ProtectedRoute = ({ children }) => {
   if (!user) return <Navigate to="/login" replace />;
   return children;
 };
+
+
+// 🆕 v22: Smart Layout - يختار MainLayout أو MobileLayout
+const SmartLayout = () => {
+  const isMobile = useIsMobile();
+  return isMobile ? <MobileLayout /> : <MainLayout />;
+};
+
+// 🆕 v22: Smart Page Components - يختار النسخة الموبايل أو الديسكتوب
+const SmartDashboard = () => {
+  const isMobile = useIsMobile();
+  return isMobile ? <MobileDashboard /> : <Dashboard />;
+};
+
+const SmartWorkersList = () => {
+  const isMobile = useIsMobile();
+  return isMobile ? <MobileWorkersList /> : <WorkersList />;
+};
+
+const SmartWorkerDetail = () => {
+  const isMobile = useIsMobile();
+  return isMobile ? <MobileWorkerDetail /> : <WorkerDetail />;
+};
+
 
 function App() {
   return (
@@ -49,12 +79,12 @@ function App() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Dashboard />} />
-        <Route path="workers" element={<WorkersList />} />
+        <Route index element={<SmartDashboard />} />
+        <Route path="workers" element={<SmartWorkersList />} />
         <Route path="deleted-workers" element={<DeletedWorkers />} />
           <Route path="audit-logs" element={<AuditLogs />} />
         <Route path="workers/new" element={<WorkerForm />} />
-        <Route path="workers/:id" element={<WorkerDetail />} />
+        <Route path="workers/:id" element={<SmartWorkerDetail />} />
         <Route path="workers/:id/edit" element={<WorkerForm />} />
         <Route path="hospitals" element={<Hospitals />} />
         <Route path="devices" element={<Devices />} />

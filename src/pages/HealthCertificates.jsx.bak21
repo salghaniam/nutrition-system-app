@@ -33,7 +33,7 @@ const HealthCertificates = () => {
 
   const viewCertificate = async (id) => {
     try {
-      const token = sessionStorage.getItem('token');
+      const token = localStorage.getItem('token');
       const res = await fetch(`/api/health-certificates/${id}/form`, {
         headers: { Authorization: `Bearer ${token}` },
       });

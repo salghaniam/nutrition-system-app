@@ -1,0 +1,146 @@
+/* ============================================================
+   🆕 v21: Mobile Responsive Enhancements
+   ============================================================ */
+
+/* تحسين الـ scrollbar على الموبايل */
+@media (max-width: 768px) {
+  /* جداول لها overflow أفقي */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* تحسين input fields على الموبايل */
+  input,
+  select,
+  textarea {
+    font-size: 16px !important; /* يمنع zoom على iOS */
+    min-height: 44px;
+  }
+  
+  /* أزرار بحجم مناسب للمس (44x44 معيار Apple) */
+  button:not(.no-touch-target) {
+    min-height: 44px;
+  }
+  
+  /* تقليل padding على الموبايل */
+  .container-mobile {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}
+
+/* Modals تظهر بحجم كامل على الموبايل */
+@media (max-width: 640px) {
+  .modal-mobile-fullscreen {
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+    margin: 0;
+  }
+}
+
+/* Pull to refresh indicator (اختياري للمستقبل) */
+.ptr-indicator {
+  position: fixed;
+  top: -50px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 8px 16px;
+  border-radius: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  transition: top 0.3s;
+  z-index: 100;
+}
+
+.ptr-indicator.active {
+  top: 16px;
+}
+
+/* تحسين الجداول على الشاشات الصغيرة */
+.responsive-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.responsive-table-wrapper::-webkit-scrollbar {
+  height: 4px;
+}
+
+.responsive-table-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.responsive-table-wrapper::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+/* Safe area للأجهزة ذات notch */
+@supports (padding: max(0px)) {
+  .safe-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  
+  .safe-top {
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
+}
+
+/* تحسين Active states على الموبايل */
+@media (hover: none) {
+  /* إزالة hover effects على touch devices */
+  .hover-only:hover {
+    background-color: inherit;
+  }
+}
+
+/* Animation للـ sidebar */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.sidebar-mobile-enter {
+  animation: slideInRight 0.3s ease-out;
+}
+
+/* تحسين النصوص على الموبايل */
+@media (max-width: 640px) {
+  h1 {
+    font-size: 1.5rem !important;
+    line-height: 2rem !important;
+  }
+  
+  h2 {
+    font-size: 1.25rem !important;
+    line-height: 1.75rem !important;
+  }
+  
+  /* تقليل margins على الموبايل */
+  .mobile-tight-spacing {
+    margin: 0.5rem 0;
+  }
+}
+
+/* Cards على الموبايل لها shadow أوضح */
+@media (max-width: 768px) {
+  .mobile-card {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 0.75rem;
+  }
+}
+
+/* تحسين الرسائل والـ toasts على الموبايل */
+@media (max-width: 640px) {
+  .toast-container-mobile {
+    padding: 0 1rem;
+    max-width: 100%;
+  }
+}
