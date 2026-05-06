@@ -9,6 +9,7 @@ import { useAuth, ROLE_NAMES } from '../context/AuthContext';
 import { useIdleTimer } from '../hooks/useIdleTimer';
 import IdleWarningModal from '../components/IdleWarningModal';
 import toast from 'react-hot-toast';
+import NotificationBell from '../components/NotificationBell';
 
 const MainLayout = () => {
   // 🆕 v21: Responsive sidebar
@@ -219,6 +220,7 @@ const MainLayout = () => {
 
           {/* المستشفى الحالي */}
           <div className="flex items-center gap-3">
+            <NotificationBell />
             {user?.hospital && (
               <div className="flex items-center gap-2 px-2 md:px-3 py-1.5 bg-moh-bg-light text-moh-primary rounded-lg text-xs md:text-sm">
                 <Building2 size={14} className="flex-shrink-0" />

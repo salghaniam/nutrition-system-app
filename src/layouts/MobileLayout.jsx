@@ -9,6 +9,7 @@ import { useAuth, ROLE_NAMES } from '../context/AuthContext';
 import { useIdleTimer } from '../hooks/useIdleTimer';
 import IdleWarningModal from '../components/IdleWarningModal';
 import toast from 'react-hot-toast';
+import NotificationBell from '../components/NotificationBell';
 
 /**
  * 🆕 v22: Mobile Layout
@@ -94,6 +95,9 @@ const MobileLayout = () => {
               <p className="text-xs opacity-90 truncate">{user.hospital.name}</p>
             )}
           </div>
+
+          <NotificationBell className="text-white hover:bg-white/10" />
+
 
           {/* الأفاتار */}
           <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-bold text-base">

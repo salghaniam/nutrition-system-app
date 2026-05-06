@@ -37,6 +37,10 @@ import MobileDevices from './pages/mobile/MobileDevices';
 import MobileUserForm from './pages/mobile/MobileUserForm';
 import MobileHospitalForm from './pages/mobile/MobileHospitalForm';
 import MobileDeviceForm from './pages/mobile/MobileDeviceForm';
+
+// 🆕 v24: Notifications
+import Notifications from './pages/Notifications';
+import MobileNotifications from './pages/mobile/MobileNotifications';
 import {
   MobileUsers, MobileHospitals, MobileDeletedWorkers,
   MobileLookups, MobileAuditLogs, MobileReports, 
@@ -162,6 +166,13 @@ const SmartDeviceForm = () => {
   return isMobile ? <MobileDeviceForm /> : <Devices />;
 };
 
+// 🆕 v24: Smart Notifications
+const SmartNotifications = () => {
+  const isMobile = useIsMobile();
+  return isMobile ? <MobileNotifications /> : <Notifications />;
+};
+
+
 
 
 
@@ -203,6 +214,7 @@ function App() {
         <Route path="lookups" element={<SmartLookups />} />
         <Route path="reports" element={<SmartReports />} />
         <Route path="settings" element={<SmartSettings />} />
+        <Route path="notifications" element={<SmartNotifications />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

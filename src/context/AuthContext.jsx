@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import { initializePushNotifications, unregisterPushNotifications } from '../services/pushNotifications';
 
 
 // 🆕 v19: Storage helpers
@@ -33,6 +34,8 @@ export const AuthProvider = ({ children }) => {
       api.get('/auth/me')
         .then((res) => {
           setUser(res.data.data);
+      // 🆕 v24: تسجيل push notifications
+      initializePushNotifications().catch(() => {});
           localStorage.setItem('user', JSON.stringify(res.data.data));
         })
         .catch(() => logout())
@@ -57,6 +60,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    // 🆕 v24: إلغاء push notifications
+    unregisterPushNotifications().catch(() => {});
     tokenStorage.remove();
     localStorage.removeItem('user');
     setUser(null);

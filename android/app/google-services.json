@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "433111824228",
+    "project_id": "nutrition-system-aa410",
+    "storage_bucket": "nutrition-system-aa410.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:433111824228:android:beeff79bc2ab3893d2ac71",
+        "android_client_info": {
+          "package_name": "sa.gov.moh.nutrition"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCsc87fRSP5zeMB8Ne7VRzJZsEK1j98DFA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
