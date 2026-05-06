@@ -34,9 +34,9 @@ export const AuthProvider = ({ children }) => {
       api.get('/auth/me')
         .then((res) => {
           setUser(res.data.data);
-      // 🆕 v24: تسجيل push notifications
-      initializePushNotifications().catch(() => {});
           localStorage.setItem('user', JSON.stringify(res.data.data));
+          // 🆕 v24: تسجيل push notifications
+          initializePushNotifications().catch(() => {});
         })
         .catch(() => logout())
         .finally(() => setLoading(false));
@@ -52,6 +52,8 @@ export const AuthProvider = ({ children }) => {
       tokenStorage.set(token);
       localStorage.setItem('user', JSON.stringify(user));
       setUser(user);
+      // 🆕 v24: تسجيل push notifications
+      initializePushNotifications().catch(() => {});
       toast.success('تم تسجيل الدخول بنجاح');
       return { success: true };
     } catch (error) {
