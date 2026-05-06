@@ -9,10 +9,12 @@ import {
 } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
 const Notifications = () => {
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const { 
     notifications, loading, fetchNotifications, 
     markAsRead, markAllAsRead, deleteNotification, unreadCount 
@@ -93,6 +95,14 @@ const Notifications = () => {
             >
               🧪 اختبار
             </button>
+            {['system_admin', 'system_supervisor'].includes(currentUser?.role) && (
+              <button
+                onClick={() => navigate('/send-notification')}
+                className="px-3 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg text-sm flex items-center gap-2"
+              >
+                ✉️ إرسال إشعار
+              </button>
+            )}
             {unreadCount > 0 && (
               <button
                 onClick={markAllAsRead}

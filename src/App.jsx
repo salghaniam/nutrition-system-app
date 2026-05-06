@@ -41,6 +41,10 @@ import MobileDeviceForm from './pages/mobile/MobileDeviceForm';
 // 🆕 v24: Notifications
 import Notifications from './pages/Notifications';
 import MobileNotifications from './pages/mobile/MobileNotifications';
+
+// 🆕 v24.3: Send Notification
+import SendNotification from './pages/SendNotification';
+import MobileSendNotification from './pages/mobile/MobileSendNotification';
 import {
   MobileUsers, MobileHospitals, MobileDeletedWorkers,
   MobileLookups, MobileAuditLogs, MobileReports, 
@@ -172,6 +176,13 @@ const SmartNotifications = () => {
   return isMobile ? <MobileNotifications /> : <Notifications />;
 };
 
+// 🆕 v24.3: Smart Send Notification
+const SmartSendNotification = () => {
+  const isMobile = useIsMobile();
+  return isMobile ? <MobileSendNotification /> : <SendNotification />;
+};
+
+
 
 
 
@@ -215,6 +226,7 @@ function App() {
         <Route path="reports" element={<SmartReports />} />
         <Route path="settings" element={<SmartSettings />} />
         <Route path="notifications" element={<SmartNotifications />} />
+        <Route path="send-notification" element={<SmartSendNotification />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

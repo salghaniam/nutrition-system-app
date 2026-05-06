@@ -13,9 +13,11 @@ import {
 } from '../../components/mobile/MobileUI';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../context/AuthContext';
 
 const MobileNotifications = () => {
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const { 
     notifications, loading, fetchNotifications, 
     markAsRead, markAllAsRead, deleteNotification, unreadCount 
@@ -180,6 +182,14 @@ const MobileNotifications = () => {
 
       {/* زر الاختبار */}
       <div className="mt-6 pt-4 border-t border-gray-200">
+        {['system_admin', 'system_supervisor'].includes(currentUser?.role) && (
+          <button
+            onClick={() => navigate('/send-notification')}
+            className="w-full flex items-center justify-center gap-2 py-3 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-xl text-sm font-medium mb-2"
+          >
+            ✉️ إرسال إشعار
+          </button>
+        )}
         <button
           onClick={sendTest}
           className="w-full flex items-center justify-center gap-2 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-medium"
